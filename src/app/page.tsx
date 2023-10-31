@@ -1,95 +1,64 @@
-import Image from 'next/image'
-import styles from './page.module.css'
+"use client";
 
-export default function Home() {
+import { CSSProperties, useEffect, useRef, useState } from "react";
+import { detectTextInImage } from "./lib/detectTextInImage";
+
+const Home = () => {
+  const [captureImage, setCaptureImage] = useState<string>();
+  const [rearCameraStream, setRearCameraStream] = useState<MediaStream>();
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    navigator.mediaDevices
+      .getUserMedia({ video: { facingMode: "environment" } })
+      .then((stream) => {
+        videoRef.current!.srcObject = stream;
+        setRearCameraStream(stream);
+      })
+      .catch((error) => {
+        console.error("カメラストリーミングに失敗しました: ", error);
+      });
+    // detectTextInImage(captureImage.buffered);
+  }, []);
+
+  const handleClick = () => {
+    if (videoRef.current === null) return;
+    const { videoWidth, videoHeight } = videoRef.current;
+
+    if (canvasRef.current === null) return;
+
+    canvasRef.current.width = videoWidth;
+    canvasRef.current.height = videoHeight;
+
+    const rearContext = canvasRef.current.getContext("2d");
+
+    if (rearContext === null) return;
+
+    rearContext.drawImage(
+      videoRef.current,
+      0,
+      0,
+      canvasRef.current.width,
+      canvasRef.current.height
+    );
+
+    setCaptureImage(canvasRef.current.toDataURL("image/png"));
+  };
+
   return (
-    <main className={styles.main}>
-      <div className={styles.description}>
-        <p>
-          Get started by editing&nbsp;
-          <code className={styles.code}>src/app/page.tsx</code>
-        </p>
-        <div>
-          <a
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{' '}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className={styles.vercelLogo}
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
-      </div>
-
-      <div className={styles.center}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className={styles.grid}>
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Docs <span>-&gt;</span>
-          </h2>
-          <p>Find in-depth information about Next.js features and API.</p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Learn <span>-&gt;</span>
-          </h2>
-          <p>Learn about Next.js in an interactive course with&nbsp;quizzes!</p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Templates <span>-&gt;</span>
-          </h2>
-          <p>Explore the Next.js 13 playground.</p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Deploy <span>-&gt;</span>
-          </h2>
-          <p>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
+    <main style={cameraContainerStyle}>
+      <video ref={videoRef} autoPlay />
+      <button onClick={handleClick}>撮影</button>
+      <canvas ref={canvasRef} width={600} height={450} />
     </main>
-  )
-}
+  );
+};
+
+export default Home;
+
+const cameraContainerStyle: CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+};
